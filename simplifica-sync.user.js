@@ -1,13 +1,18 @@
 // ==UserScript==
 // @name         Simplifica → Cronograma (sync automático)
 // @namespace    https://edneycarvalho6-ctrl.github.io/cronograma-simplifica/
-// @version      2.0
+// @version      2.1
 // @description  Enquanto o Edney navega nos cursos da Simplifica na Hotmart, marca sozinho as aulas concluídas no Cronograma Simplifica (nuvem Supabase). Aditivo: nunca desmarca.
 // @match        *://*.hotmart.com/*
 // @match        *://hotmart.com/*
+// @downloadURL  https://raw.githubusercontent.com/edneycarvalho6-ctrl/cronograma-simplifica/main/simplifica-sync.user.js
+// @updateURL    https://raw.githubusercontent.com/edneycarvalho6-ctrl/cronograma-simplifica/main/simplifica-sync.user.js
 // @run-at       document-idle
 // @grant        none
 // ==/UserScript==
+
+// >>> MODO ESPIÃO (temporário): manda pra nuvem (id=99) o que o script enxerga na página.
+const DEBUG = true;
 
 (function () {
   'use strict';
@@ -83,6 +88,51 @@
     return null;
   }
 
+  // ---- MODO ESPIÃO: reporta pra nuvem (id=99) o que o script vê nesta página/frame ----
+  async function salvarDebug(report) {
+    try {
+      const id = report.frame === 'top' ? 99 : 98; // 99 = frame de topo, 98 = iframe
+      await fetch(SUPA_URL + '/rest/v1/cronograma_estudo', {
+        method: 'POST',
+        headers: { ...H, Prefer: 'resolution=merge-duplicates' },
+        body: JSON.stringify({ id, dados: report, updated_at: new Date().toISOString() })
+      });
+    } catch (e) {}
+  }
+  function coletarDebug(dados, completos, atual) {
+    const nomes = [];
+    dados.cursos.forEach(c => c.modulos.forEach(m => m.aulas.forEach(a => nomes.push(a.nome))));
+    // procura, em QUALQUER elemento-folha, texto que bata (exato ou contido) com nome de aula
+    const matches = [];
+    const leafs = [...document.querySelectorAll('body *')].filter(e => e.children.length === 0);
+    for (const el of leafs) {
+      const t = norm(el.textContent);
+      if (t.length < 5 || t.length > 160) continue;
+      const hit = nomes.find(n => { const nn = norm(n); return t === nn || t.includes(nn) || nn.includes(t); });
+      if (!hit) continue;
+      // sobe alguns níveis e registra classes + se há algum ícone/indicador de "concluído" por perto
+      let row = el, classes = [], hasSvg = false, checkGlyph = false, completoTxt = false;
+      for (let i = 0; i < 5 && row; i++, row = row.parentElement) {
+        if (row.className && typeof row.className === 'string') classes.push(row.className.slice(0, 60));
+        if (row.querySelector && row.querySelector('svg,img,i[class]')) hasSvg = true;
+        const rt = norm(row.textContent);
+        if (/✓|✔|check|conclu|complet|assisti|watched|done/.test(row.className + ' ' + (row.getAttribute && (row.getAttribute('aria-label') || '')))) completoTxt = true;
+        if (/[✓✔]/.test(row.textContent)) checkGlyph = true;
+      }
+      matches.push({ aula: hit, txt: el.textContent.trim().slice(0, 80), tag: el.tagName, classes, hasSvg, checkGlyph, completoTxt });
+      if (matches.length >= 25) break;
+    }
+    const heads = [...document.querySelectorAll('h1,h2,h3')].map(h => h.textContent.trim().slice(0, 90)).filter(Boolean).slice(0, 20);
+    return {
+      debug: true, ts: new Date().toISOString(), url: location.href,
+      frame: window.top === window.self ? 'top' : 'iframe',
+      docTitle: document.title.slice(0, 120),
+      nLeafs: leafs.length, nHeads: heads.length, heads,
+      completos: [...completos], atual: atual ? { modulo: atual.modulo.nome, idx: atual.idx, nome: atual.modulo.aulas[atual.idx].nome } : null,
+      nMatches: matches.length, matches
+    };
+  }
+
   let ultimaAssinatura = '';
 
   async function sincronizar() {
@@ -93,6 +143,8 @@
     const nomesModulos = dados.cursos.flatMap(c => c.modulos.map(m => m.nome));
     const completos = modulosCompletosNaPagina(nomesModulos);
     const atual = aulaAtualNaPagina(dados);
+
+    if (DEBUG) salvarDebug(coletarDebug(dados, completos, atual));
 
     const assinatura = [...completos].sort().join('|') + '||' +
       (atual ? atual.modulo.nome + '#' + atual.idx : '');
