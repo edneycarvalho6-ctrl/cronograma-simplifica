@@ -1,5 +1,5 @@
-const CACHE = 'cronograma-v1';
-const ARQUIVOS = ['./cronograma.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'cronograma-v2';
+const ARQUIVOS = ['./cronograma.html', './dados-cursos.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS)));

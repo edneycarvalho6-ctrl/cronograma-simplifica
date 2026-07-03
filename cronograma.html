@@ -13,7 +13,7 @@
     --excel:#2e9e5b; --pbi:#e8b114; --ia:#7c5cff; --ok:#2e9e5b; --next:#ff9d3c;
   }
   *{box-sizing:border-box; margin:0; padding:0; font-family:'Segoe UI',system-ui,sans-serif;}
-  body{background:var(--bg); color:var(--txt); font-size:13.5px; padding:10px 10px 14px; user-select:none;}
+  body{background:var(--bg); color:var(--txt); font-size:13.5px; padding:10px 10px 14px; user-select:none; max-width:560px; margin:0 auto;}
   header{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
   header h1{font-size:15px; font-weight:600; flex:1;}
   #sync{font-size:10px; color:#555b76; vertical-align:middle;}
@@ -28,39 +28,37 @@
   .dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
   .curso-head .nome{flex:1; font-weight:600; font-size:13.5px;}
   .curso-head .meta{font-size:11px; color:var(--dim); white-space:nowrap;}
-  .curso-head .chev{color:var(--dim); font-size:11px; transition:transform .2s;}
-  .curso.aberto .chev{transform:rotate(90deg);}
-  .curso .barra{margin:0 11px 8px;}
-  .itens{display:none; padding:2px 6px 8px;}
-  .curso.aberto .itens{display:block;}
-  .item{display:flex; align-items:center; gap:8px; padding:6px 6px; border-radius:7px; cursor:pointer;}
+  .chev{color:var(--dim); font-size:11px; transition:transform .2s; flex-shrink:0;}
+  .aberto > .curso-head .chev, .mod.aberto > .mod-head .chev{transform:rotate(90deg);}
+  .curso > .barra{margin:0 11px 8px;}
+  .mods{display:none; padding:2px 6px 8px;}
+  .curso.aberto > .mods{display:block;}
+  .mod{border-radius:8px; margin-bottom:3px;}
+  .mod-head{display:flex; align-items:center; gap:8px; padding:7px 6px; border-radius:8px; cursor:pointer;}
+  .mod-head:hover{background:var(--card2);}
+  .mod-head .mnome{flex:1; font-weight:600; font-size:12.5px; line-height:1.25;}
+  .mod-head .mfrac{font-size:10.5px; color:var(--dim); white-space:nowrap;}
+  .mod-head .mchk{color:var(--ok); font-size:13px;}
+  .mod.completo > .mod-head .mnome{color:var(--dim);}
+  .aulas{display:none; padding-left:14px;}
+  .mod.aberto > .aulas{display:block;}
+  .item{display:flex; align-items:center; gap:8px; padding:5px 6px; border-radius:7px; cursor:pointer;}
   .item:hover{background:var(--card2);}
-  .chk{width:17px; height:17px; border:2px solid #4a4f68; border-radius:50%; flex-shrink:0;
-       display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff;}
+  .chk{width:15px; height:15px; border:2px solid #4a4f68; border-radius:50%; flex-shrink:0;
+       display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff;}
   .item.feito .chk{background:var(--ok); border-color:var(--ok);}
-  .item .txt{flex:1; line-height:1.25;}
+  .item .txt{flex:1; line-height:1.25; font-size:12.5px;}
   .item.feito .txt{color:var(--dim); text-decoration:line-through;}
   .item .data{font-size:10px; color:var(--dim); white-space:nowrap;}
-  .item.proxima{background:rgba(255,157,60,.09); outline:1px solid rgba(255,157,60,.4);}
+  .item.proxima, .mod-head.proxima{background:rgba(255,157,60,.09); outline:1px solid rgba(255,157,60,.4);}
   .badge{font-size:9.5px; font-weight:700; color:var(--next); border:1px solid var(--next);
          border-radius:4px; padding:1px 5px; white-space:nowrap;}
-  .edit-btns{display:none; gap:4px;}
-  body.editando .edit-btns{display:flex;}
-  body.editando .item .data{display:none;}
-  .mini{background:#31364d; border:none; color:var(--txt); border-radius:5px; width:22px; height:22px;
-        cursor:pointer; font-size:11px;}
-  .mini:hover{background:#3d4360;}
-  .add-aula{display:none; margin:4px 6px 2px; background:none; border:1px dashed #4a4f68; color:var(--dim);
-        border-radius:7px; padding:5px; width:calc(100% - 12px); cursor:pointer; font-size:12px;}
-  body.editando .add-aula{display:block;}
-  .add-aula:hover{color:var(--txt); border-color:var(--dim);}
   footer{display:flex; gap:6px; margin-top:10px;}
   footer button{flex:1; background:var(--card); border:none; color:var(--dim); padding:7px 4px;
         border-radius:8px; cursor:pointer; font-size:11.5px;}
   footer button:hover{background:var(--card2); color:var(--txt);}
-  body.editando #btnEditar{background:var(--next); color:#1b1e2b; font-weight:700;}
   #toast{position:fixed; left:50%; bottom:14px; transform:translateX(-50%); background:#2e9e5b; color:#fff;
-        padding:7px 16px; border-radius:20px; font-size:12px; opacity:0; pointer-events:none; transition:opacity .3s;}
+        padding:7px 16px; border-radius:20px; font-size:12px; opacity:0; pointer-events:none; transition:opacity .3s; white-space:nowrap;}
   #toast.show{opacity:1;}
 </style>
 </head>
@@ -71,89 +69,83 @@
 </header>
 <div id="cursos"></div>
 <footer>
-  <button id="btnEditar" onclick="toggleEditar()">✎ Editar</button>
+  <button onclick="irParaProxima()">🎯 Próxima aula</button>
   <button onclick="exportar()">💾 Backup</button>
   <button onclick="document.getElementById('arq').click()">📂 Restaurar</button>
   <input type="file" id="arq" accept=".json" style="display:none" onchange="importar(this)">
 </footer>
 <div id="toast"></div>
 
+<script src="dados-cursos.js"></script>
 <script>
-const CHAVE = 'cronograma-simplifica-v3';
+const CHAVE = 'cronograma-simplifica-v4';
+const VERSAO = 4;
 
-const PADRAO = {
-  cursos: [
-    { id:'excel', nome:'Excel', cor:'var(--excel)', meta:'meta: out/2026', aberto:true, itens:[
-      {nome:'COMECE AQUI', feito:true, data:'2026-07-02T12:00:00'},
-      {nome:'Informações Iniciais', feito:true, data:'2026-07-02T12:00:00'},
-      {nome:'Assistentes Inteligentes Simplifica', feito:true, data:'2026-07-02T12:00:00'},
-      {nome:'Módulo 1 - Saindo do Zero no Excel', feito:true, data:'2026-07-02T12:00:00'},
-      'Módulo 2 - Fórmulas Essenciais e Produtividade',
-      'Módulo 3 - Fórmulas e Recursos de Mercado - Parte 1',
-      'Módulo 4 - Fórmulas e Recursos de Mercado - Parte 2',
-      'Módulo 5 - Fórmulas e Recursos de Mercado - Parte 3',
-      'Módulo 6 - Análise e Tratamento de Dados',
-      'Módulo 7 - Gráficos e Apresentação de Informações',
-      'Módulo 8 - Tabelas Dinâmicas e Análises',
-      'Módulo 9 - Fórmulas e Recursos Especiais e Avançados',
-      'Módulo 10 - Testes, Provas e Desafios de Excel',
-      'Módulo 11 - Dashboards e Relatórios Profissionais',
-    ]},
-    { id:'pbi', nome:'Power BI', cor:'var(--pbi)', meta:'meta: mar/2027 (férias em dez)', aberto:false, itens:[
-      'Módulo 1 - Introdução ao Power BI',
-      'Módulo 2 - Primeiros Projetos no Power BI',
-      'Módulo 3 - Tratamento de Dados e Power Query',
-      'Módulo 4 - Modelagem de Dados e Relacionamentos',
-      'Módulo 5 - Funções e Linguagem DAX',
-      'Módulo 6 - Gráficos e Visuais',
-      'Módulo 7 - Dashboards e Relatórios no Power BI',
-      'Módulo 8 - Power BI Serviço',
-      'Módulo 9 - Biblioteca de Dashboards e Templates',
-    ]},
-    { id:'ia', nome:'Inteligência Artificial', cor:'var(--ia)', meta:'meta: mai/2027', aberto:false, itens:[
-      'Informações Iniciais',
-      'As Ferramentas mais Importantes de IA',
-      'Biblioteca de Ferramentas de IA',
-      'Assistentes de IA',
-      'Inteligência Artificial e Dados',
-      'Agentes de IA e Automação',
-      'Business Cases e Aplicações Práticas',
-      'Dicas Rápidas, Hacks e Guias',
-    ]},
-  ]
-};
+function novoDeSeed(){
+  // deep-copy do PADRAO com campos de estado garantidos
+  const d = JSON.parse(JSON.stringify(PADRAO));
+  d.cursos.forEach(c => {
+    if(c.aberto === undefined) c.aberto = false;
+    c.modulos.forEach(m => {
+      if(m.aberto === undefined) m.aberto = false;
+      if(!m.aulas) m.aulas = [];
+      if(m.aulas.length === 0 && m.feito === undefined){ m.feito = false; m.data = null; }
+      m.aulas.forEach(a => { if(a.feito === undefined) a.feito = false; if(a.data === undefined) a.data = null; });
+    });
+  });
+  return d;
+}
+
+// aplica os "feito" de um estado antigo sobre a estrutura nova do seed (casando por nome)
+function mesclar(seed, antigo){
+  if(!antigo || !antigo.cursos) return seed;
+  const marca = {};
+  antigo.cursos.forEach(c => (c.modulos || []).forEach(m => {
+    if(m.feito) marca[c.id + '|' + m.nome] = m.data || null;
+    (m.aulas || []).forEach(a => { if(a.feito) marca[c.id + '|' + m.nome + '|' + a.nome] = a.data || null; });
+  }));
+  seed.cursos.forEach(c => c.modulos.forEach(m => {
+    const km = c.id + '|' + m.nome;
+    if(m.aulas.length === 0 && km in marca){ m.feito = true; m.data = marca[km]; }
+    m.aulas.forEach(a => { const k = km + '|' + a.nome; if(k in marca){ a.feito = true; a.data = marca[k]; } });
+  }));
+  return seed;
+}
 
 let dados;
 function carregar(){
   try{
     dados = JSON.parse(localStorage.getItem(CHAVE));
-    if(!dados || !dados.cursos) throw 0;
+    if(!dados || dados.v !== VERSAO) throw 0;
   }catch(e){
-    dados = { cursos: PADRAO.cursos.map(c => ({...c, itens: c.itens.map(n =>
-      typeof n === 'string' ? {nome:n, feito:false, data:null} : {feito:false, data:null, ...n})})) };
-    salvar();
+    dados = novoDeSeed();
+    salvarLocal();
   }
 }
-function salvar(){ localStorage.setItem(CHAVE, JSON.stringify(dados)); salvarNuvemDebounce(); }
+function salvarLocal(){ localStorage.setItem(CHAVE, JSON.stringify(dados)); }
+function salvar(){ salvarLocal(); salvarNuvemDebounce(); }
 
 // ---- Sincronização com a nuvem (Supabase) ----
 const SUPA_URL = 'https://splkpfmpnpclxxuktggl.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbGtwZm1wbnBjbHh4dWt0Z2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzODM5MjAsImV4cCI6MjA5NTk1OTkyMH0.PWwjUzdYQMSY3SYP-h3hqVzqXRK6eUCTgNpu7MwH6Iw';
 const SUPA_H = {'apikey':SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY, 'Content-Type':'application/json'};
-function setSync(cls){ const s=document.getElementById('sync'); if(s){ s.className=cls; } }
+function setSync(cls){ const s = document.getElementById('sync'); if(s) s.className = cls; }
 
 async function carregarNuvem(){
   try{
-    const r = await fetch(SUPA_URL+'/rest/v1/cronograma_estudo?id=eq.1&select=dados,updated_at', {headers:SUPA_H});
+    const r = await fetch(SUPA_URL+'/rest/v1/cronograma_estudo?id=eq.1&select=dados', {headers:SUPA_H});
     if(!r.ok) throw 0;
     const rows = await r.json();
-    if(rows.length){
+    if(rows.length && rows[0].dados && rows[0].dados.v === VERSAO){
       dados = rows[0].dados;
-      localStorage.setItem(CHAVE, JSON.stringify(dados));
-      render();
+      salvarLocal();
     } else {
-      await salvarNuvem(); // primeira vez: sobe o estado local
+      // nuvem vazia ou em formato antigo: mescla progresso antigo na estrutura nova e sobe
+      dados = mesclar(novoDeSeed(), rows.length ? rows[0].dados : dados);
+      salvarLocal();
+      await salvarNuvem();
     }
+    render();
     setSync('ok');
   }catch(e){ setSync('erro'); }
 }
@@ -171,12 +163,23 @@ async function salvarNuvem(){
   }catch(e){ setSync('erro'); }
 }
 
+// ---- lógica ----
+function statsModulo(m){
+  if(m.aulas.length === 0) return {f: m.feito?1:0, n:1};
+  return {f: m.aulas.filter(a=>a.feito).length, n: m.aulas.length};
+}
 function proximaGlobal(){
   for(const c of dados.cursos)
-    for(let i=0;i<c.itens.length;i++)
-      if(!c.itens[i].feito) return c.id+'_'+i;
+    for(let mi=0; mi<c.modulos.length; mi++){
+      const m = c.modulos[mi];
+      if(m.aulas.length === 0){ if(!m.feito) return {c:c.id, mi, ai:-1}; continue; }
+      for(let ai=0; ai<m.aulas.length; ai++)
+        if(!m.aulas[ai].feito) return {c:c.id, mi, ai};
+    }
   return null;
 }
+function fmtData(iso){ const d = new Date(iso); return d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0'); }
+function acha(id){ return dados.cursos.find(c=>c.id===id); }
 
 function render(){
   const prox = proximaGlobal();
@@ -184,74 +187,85 @@ function render(){
   const el = document.getElementById('cursos');
   el.innerHTML = '';
   dados.cursos.forEach(c=>{
-    const f = c.itens.filter(i=>i.feito).length, n = c.itens.length;
-    totF+=f; totN+=n;
-    const pct = n? Math.round(100*f/n):0;
+    let cf=0, cn=0;
+    c.modulos.forEach(m=>{ const s=statsModulo(m); cf+=s.f; cn+=s.n; });
+    totF+=cf; totN+=cn;
+    const pct = cn? Math.round(100*cf/cn):0;
     const div = document.createElement('div');
     div.className = 'curso'+(c.aberto?' aberto':'');
+    let modsHtml = c.modulos.map((m,mi)=>{
+      const s = statsModulo(m);
+      const completo = s.f===s.n;
+      const ehProxMod = prox && prox.c===c.id && prox.mi===mi;
+      if(m.aulas.length === 0){
+        // módulo sem aulas detalhadas: a linha é o próprio item clicável
+        return `<div class="mod ${completo?'completo':''}">
+          <div class="mod-head ${ehProxMod?'proxima':''}" onclick="toggleModuloInteiro('${c.id}',${mi})">
+            <span class="chk ${''}" style="${m.feito?'background:var(--ok);border-color:var(--ok);':''}">${m.feito?'✓':''}</span>
+            <span class="mnome" style="${m.feito?'color:var(--dim);text-decoration:line-through;':''}">${m.nome}</span>
+            ${ehProxMod?'<span class="badge">PRÓXIMA</span>':''}
+            ${m.feito&&m.data?`<span class="mfrac">${fmtData(m.data)}</span>`:''}
+          </div></div>`;
+      }
+      return `<div class="mod ${m.aberto?'aberto':''} ${completo?'completo':''}">
+        <div class="mod-head ${ehProxMod&&!m.aberto?'proxima':''}" onclick="toggleModulo('${c.id}',${mi})">
+          ${completo?'<span class="mchk">✓</span>':''}
+          <span class="mnome">${m.nome}</span>
+          <span class="mfrac">${s.f}/${s.n}</span>
+          <span class="chev">▶</span>
+        </div>
+        <div class="aulas">
+          ${m.aulas.map((a,ai)=>{
+            const ehProx = prox && prox.c===c.id && prox.mi===mi && prox.ai===ai;
+            return `<div class="item ${a.feito?'feito':''} ${ehProx?'proxima':''}" onclick="toggleAula('${c.id}',${mi},${ai})">
+              <span class="chk">${a.feito?'✓':''}</span>
+              <span class="txt">${a.nome}</span>
+              ${ehProx?'<span class="badge">PRÓXIMA</span>':''}
+              ${a.feito&&a.data?`<span class="data">${fmtData(a.data)}</span>`:''}
+            </div>`;
+          }).join('')}
+        </div></div>`;
+    }).join('');
     div.innerHTML = `
       <div class="curso-head" onclick="toggleCurso('${c.id}')">
         <span class="dot" style="background:${c.cor}"></span>
         <span class="nome">${c.nome}</span>
-        <span class="meta">${f}/${n} · ${(PADRAO.cursos.find(p=>p.id===c.id)||c).meta}</span>
+        <span class="meta">${cf}/${cn} · ${c.meta}</span>
         <span class="chev">▶</span>
       </div>
       <div class="barra"><i style="width:${pct}%; background:${c.cor}"></i></div>
-      <div class="itens">
-        ${c.itens.map((it,i)=>{
-          const id = c.id+'_'+i;
-          const ehProx = id===prox;
-          return `<div class="item ${it.feito?'feito':''} ${ehProx?'proxima':''}" onclick="toggleItem('${c.id}',${i})">
-            <span class="chk">${it.feito?'✓':''}</span>
-            <span class="txt">${it.nome}</span>
-            ${ehProx?'<span class="badge">PRÓXIMA</span>':''}
-            ${it.feito&&it.data?`<span class="data">${fmtData(it.data)}</span>`:''}
-            <span class="edit-btns">
-              <button class="mini" onclick="renomear(event,'${c.id}',${i})">✎</button>
-              <button class="mini" onclick="excluir(event,'${c.id}',${i})">✕</button>
-            </span>
-          </div>`;
-        }).join('')}
-        <button class="add-aula" onclick="addAula(event,'${c.id}')">+ adicionar aula</button>
-      </div>`;
+      <div class="mods">${modsHtml}</div>`;
     el.appendChild(div);
   });
   const pctG = totN? Math.round(100*totF/totN):0;
   document.getElementById('geral').innerHTML =
-    `<b>${pctG}%</b> · ${totF}/${totN} concluídos<div class="barra" style="width:110px"><i style="width:${pctG}%; background:linear-gradient(90deg,var(--excel),var(--pbi),var(--ia))"></i></div>`;
+    `<b>${pctG}%</b> · ${totF}/${totN} aulas<div class="barra" style="width:110px"><i style="width:${pctG}%; background:linear-gradient(90deg,var(--excel),var(--pbi),var(--ia))"></i></div>`;
   document.title = `Cronograma Simplifica — ${pctG}%`;
 }
 
-function fmtData(iso){ const d=new Date(iso); return d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0'); }
-function acha(id){ return dados.cursos.find(c=>c.id===id); }
-
-function toggleCurso(id){ const c=acha(id); c.aberto=!c.aberto; salvar(); render(); }
-
-function toggleItem(id,i){
-  if(document.body.classList.contains('editando')) return;
-  const it = acha(id).itens[i];
-  it.feito = !it.feito;
-  it.data = it.feito ? new Date().toISOString() : null;
+function toggleCurso(id){ const c=acha(id); c.aberto=!c.aberto; salvarLocal(); render(); }
+function toggleModulo(id,mi){ const m=acha(id).modulos[mi]; m.aberto=!m.aberto; salvarLocal(); render(); }
+function toggleModuloInteiro(id,mi){
+  const m = acha(id).modulos[mi];
+  m.feito = !m.feito;
+  m.data = m.feito ? new Date().toISOString() : null;
   salvar(); render();
-  if(it.feito) toast('Boa! Aula concluída 🎉');
+  if(m.feito) toast('Módulo concluído! 🎉');
 }
-
-function toggleEditar(){ document.body.classList.toggle('editando'); }
-function renomear(ev,id,i){
-  ev.stopPropagation();
-  const it = acha(id).itens[i];
-  const novo = prompt('Novo nome:', it.nome);
-  if(novo && novo.trim()){ it.nome = novo.trim(); salvar(); render(); }
+function toggleAula(id,mi,ai){
+  const a = acha(id).modulos[mi].aulas[ai];
+  a.feito = !a.feito;
+  a.data = a.feito ? new Date().toISOString() : null;
+  salvar(); render();
+  if(a.feito) toast('Boa! Aula concluída 🎉');
 }
-function excluir(ev,id,i){
-  ev.stopPropagation();
-  const c = acha(id);
-  if(confirm('Excluir "'+c.itens[i].nome+'"?')){ c.itens.splice(i,1); salvar(); render(); }
-}
-function addAula(ev,id){
-  ev.stopPropagation();
-  const nome = prompt('Nome da nova aula:');
-  if(nome && nome.trim()){ acha(id).itens.push({nome:nome.trim(), feito:false, data:null}); salvar(); render(); }
+function irParaProxima(){
+  const prox = proximaGlobal();
+  if(!prox){ toast('Tudo concluído! 🏆'); return; }
+  dados.cursos.forEach(c=>{ c.aberto = (c.id===prox.c); c.modulos.forEach((m,mi)=>{ m.aberto = (c.id===prox.c && mi===prox.mi); }); });
+  salvarLocal(); render();
+  const alvo = document.querySelector('.proxima');
+  if(alvo) alvo.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 function exportar(){
@@ -268,7 +282,8 @@ function importar(inp){
   r.onload = ()=>{ try{
       const d = JSON.parse(r.result);
       if(!d.cursos) throw 0;
-      dados = d; salvar(); render(); toast('Backup restaurado');
+      dados = d.v===VERSAO ? d : mesclar(novoDeSeed(), d);
+      salvar(); render(); toast('Backup restaurado');
     }catch(e){ alert('Arquivo inválido.'); } };
   r.readAsText(f);
   inp.value='';
