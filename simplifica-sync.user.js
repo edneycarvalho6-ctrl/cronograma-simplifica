@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Simplifica → Cronograma (sync automático)
 // @namespace    https://edneycarvalho6-ctrl.github.io/cronograma-simplifica/
-// @version      1.0
-// @description  Ao navegar nos cursos da Simplifica na Hotmart, marca automaticamente as aulas concluídas no Cronograma Simplifica (nuvem Supabase).
-// @match        https://hotmart.com/*club/simplifica-treinamentos*
-// @match        https://hotmart.com/*/club/simplifica-treinamentos*
+// @version      2.0
+// @description  Enquanto o Edney navega nos cursos da Simplifica na Hotmart, marca sozinho as aulas concluídas no Cronograma Simplifica (nuvem Supabase). Aditivo: nunca desmarca.
+// @match        *://*.hotmart.com/*
+// @match        *://hotmart.com/*
 // @run-at       document-idle
 // @grant        none
 // ==/UserScript==
@@ -23,7 +23,7 @@
     if (!t) {
       t = document.createElement('div');
       t.id = 'cron-sync-toast';
-      t.style.cssText = 'position:fixed;bottom:18px;left:18px;z-index:99999;background:#2e9e5b;color:#fff;' +
+      t.style.cssText = 'position:fixed;bottom:18px;left:18px;z-index:2147483647;background:#2e9e5b;color:#fff;' +
         'padding:9px 16px;border-radius:20px;font:600 13px Segoe UI,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.4);' +
         'opacity:0;transition:opacity .3s;pointer-events:none;';
       document.body.appendChild(t);
@@ -65,14 +65,21 @@
     return achados;
   }
 
-  // Aula aberta agora: heading da página + módulo indicado acima dela
+  // Aula aberta agora: casa o título da aula (heading da página OU item "tocando agora"/ativo)
+  // contra a grade, permitindo correspondência exata ou por prefixo.
   function aulaAtualNaPagina(dados) {
-    const heads = [...document.querySelectorAll('h1,h2,h3')].map(h => norm(h.textContent)).filter(Boolean);
+    const cand = [];
+    document.querySelectorAll('h1,h2,h3,[class*="title"],[class*="titulo"]').forEach(h => {
+      const t = norm(h.textContent);
+      if (t && t.length < 140) cand.push(t);
+    });
     for (const c of dados.cursos)
       for (const m of c.modulos)
-        for (let i = 0; i < m.aulas.length; i++)
-          if (heads.some(h => h === norm(m.aulas[i].nome)))
+        for (let i = 0; i < m.aulas.length; i++) {
+          const nome = norm(m.aulas[i].nome);
+          if (cand.some(t => t === nome || t.startsWith(nome) || nome.startsWith(t) && t.length > 8))
             return { curso: c, modulo: m, idx: i };
+        }
     return null;
   }
 
@@ -90,6 +97,7 @@
     const assinatura = [...completos].sort().join('|') + '||' +
       (atual ? atual.modulo.nome + '#' + atual.idx : '');
     if (assinatura === ultimaAssinatura) return; // nada novo nesta página
+    ultimaAssinatura = assinatura;
 
     const agora = new Date().toISOString();
     let mudou = 0;
@@ -113,17 +121,24 @@
       }
     }
 
-    ultimaAssinatura = assinatura;
     if (mudou > 0) {
       await salvarNuvem(dados);
       toast('📚 Cronograma sincronizado: +' + mudou + (mudou === 1 ? ' aula' : ' aulas'));
     }
   }
 
-  // roda ao carregar, ao navegar dentro do SPA e periodicamente
-  setTimeout(sincronizar, 4000);
+  // dispara: ao carregar, periodicamente, ao navegar no SPA, e quando o DOM muda (troca de aula)
+  let deb;
+  const agendar = (ms) => { clearTimeout(deb); deb = setTimeout(sincronizar, ms); };
+
+  agendar(4000);
   setInterval(sincronizar, 25000);
+
   const pushState = history.pushState;
-  history.pushState = function () { pushState.apply(this, arguments); setTimeout(sincronizar, 4000); };
-  window.addEventListener('popstate', () => setTimeout(sincronizar, 4000));
+  history.pushState = function () { pushState.apply(this, arguments); agendar(3000); };
+  window.addEventListener('popstate', () => agendar(3000));
+
+  // observa mudanças de conteúdo (o player/lista da Hotmart é SPA e não muda a URL toda hora)
+  const mo = new MutationObserver(() => agendar(3500));
+  mo.observe(document.documentElement, { childList: true, subtree: true });
 })();
